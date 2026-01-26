@@ -18,14 +18,14 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("client connected:", socket.id);
 
-  socket.on("join-event", (eventId) => {
-    socket.join(eventId);
+  socket.on("join-event", (groupId) => {
+    socket.join(groupId);
   });
 });
 
 app.post("/emit", (req, res) => {
-  const { eventId, image } = req.body;
-  io.to(eventId).emit("new-image", image);
+  const { groupId, image } = req.body;
+  io.to(groupId).emit("new-image", image);
   res.json({ ok: true });
 });
 
