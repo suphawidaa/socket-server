@@ -15,6 +15,7 @@ const io = new Server(server, {
   },
 });
 
+/* ================= SOCKET ================= */
 io.on("connection", (socket) => {
   console.log("client connected:", socket.id);
 
@@ -28,7 +29,18 @@ io.on("connection", (socket) => {
   });
 });
 
-// ยิงรูปใหม่เข้า group (เรียกจาก backend / postman)
+/* ================= EMIT IMAGE ================= */
+/*
+POST /emit
+body:
+{
+  "groupId": "group123",
+  "image": {
+    "url": "https://...",
+    "duration": 3
+  }
+}
+*/
 app.post("/emit", (req, res) => {
   const { groupId, image } = req.body;
 
@@ -37,12 +49,12 @@ app.post("/emit", (req, res) => {
   }
 
   io.to(groupId).emit("new-image", image);
-  console.log("emit new-image to", groupId);
+  console.log("emit new-image to group:", groupId);
 
   res.json({ ok: true });
 });
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log("Socket server running on", PORT);
+  console.log("Socket server running on port", PORT);
 });
