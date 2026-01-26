@@ -22,11 +22,23 @@ io.on("connection", (socket) => {
     console.log("join group:", groupId);
     socket.join(groupId);
   });
+
+  socket.on("disconnect", () => {
+    console.log("client disconnected:", socket.id);
+  });
 });
 
+// ยิงรูปใหม่เข้า group (เรียกจาก backend / postman)
 app.post("/emit", (req, res) => {
   const { groupId, image } = req.body;
+
+  if (!groupId || !image) {
+    return res.status(400).json({ error: "missing groupId or image" });
+  }
+
   io.to(groupId).emit("new-image", image);
+  console.log("emit new-image to", groupId);
+
   res.json({ ok: true });
 });
 
