@@ -39,20 +39,44 @@ io.on("connection", (socket) => {
 
 // 🔥 endpoint สำหรับ Next.js เรียกมา emit
 app.post("/emit", (req, res) => {
-  const { groupId, image } = req.body;
-  if (!groupId || !image) {
+  const { groupId, type, image, imageId, duration } = req.body;
+
+  if (!groupId || !type) {
     return res.status(400).json({ error: "Missing data" });
   }
 
-  lastImageByGroup[groupId] = image;
+  // 🖼 เพิ่มรูป
+  if (type === "new-image") {
+    if (!image) {
+      return res.status(400).json({ error: "Missing image" });
+    }
 
-  const room = io.sockets.adapter.rooms.get(groupId);
-  console.log(
-    `Emit to group ${groupId} | listeners:`,
-    room ? room.size : 0
-  );
+    lastImageByGroup[groupId] = image;
+    io.to(groupId).emit("new-image", image);
+  }
 
-  io.to(groupId).emit("new-image", image);
+  // ⏱ update duration
+  if (type === "update-duration") {
+    if (!duration) {
+      return res.status(400).json({ error: "Missing duration" });
+    }
+
+    io.to(groupId).emit("update-duration", duration);
+  }
+
+  // 🗑 ลบรูป
+  if (type === "delete-image") {
+    if (!imageId) {
+      return res.status(400).json({ error: "Missing imageId" });
+    }
+
+    if (lastImageByGroup[groupId]?._id === imageId) {
+      delete lastImageByGroup[groupId];
+    }
+
+    io.to(groupId).emit("delete-image", imageId);
+  }
+
   res.json({ success: true });
 });
 
