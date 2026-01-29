@@ -16,65 +16,59 @@ const io = new Server(server, {
   },
 });
 
-// ✅ เก็บภาพล่าสุดของแต่ละ group (กัน client เข้ามาช้า)
-const lastImageByGroup = {};
-
 io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
+  console.log("🔌 Client connected:", socket.id);
 
   socket.on("join-group", (groupId) => {
     socket.join(groupId);
-    console.log(`Socket ${socket.id} joined group: ${groupId}`);
-
-    // 🔥 ส่งภาพล่าสุดทันที ถ้ามี
-    if (lastImageByGroup[groupId]) {
-      socket.emit("new-image", lastImageByGroup[groupId]);
-    }
+    console.log(`👥 Socket ${socket.id} joined group: ${groupId}`);
   });
 
   socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+    console.log("❌ Client disconnected:", socket.id);
   });
 });
 
-// 🔥 endpoint สำหรับ Next.js เรียกมา emit
+// 🔥 endpoint สำหรับ Next.js ยิง event realtime
 app.post("/emit", (req, res) => {
   const { groupId, type, image, imageId, duration } = req.body;
 
   if (!groupId || !type) {
-    return res.status(400).json({ error: "Missing data" });
+    return res.status(400).json({ error: "Missing groupId or type" });
   }
 
-  // 🖼 เพิ่มรูป
-  if (type === "new-image") {
-    if (!image) {
-      return res.status(400).json({ error: "Missing image" });
+  console.log("📣 EMIT:", type, "→ group:", groupId);
+
+  switch (type) {
+    case "new-image": {
+      if (!image || !image._id) {
+        return res.status(400).json({ error: "Invalid image data" });
+      }
+
+      io.to(groupId).emit("new-image", image);
+      break;
     }
 
-    lastImageByGroup[groupId] = image;
-    io.to(groupId).emit("new-image", image);
-  }
+    case "delete-image": {
+      if (!imageId) {
+        return res.status(400).json({ error: "Missing imageId" });
+      }
 
-  // ⏱ update duration
-  if (type === "update-duration") {
-    if (!duration) {
-      return res.status(400).json({ error: "Missing duration" });
+      io.to(groupId).emit("delete-image", imageId);
+      break;
     }
 
-    io.to(groupId).emit("update-duration", duration);
-  }
+    case "update-duration": {
+      if (typeof duration !== "number") {
+        return res.status(400).json({ error: "Invalid duration" });
+      }
 
-  // 🗑 ลบรูป
-  if (type === "delete-image") {
-    if (!imageId) {
-      return res.status(400).json({ error: "Missing imageId" });
+      io.to(groupId).emit("update-duration", duration);
+      break;
     }
 
-    if (lastImageByGroup[groupId]?._id === imageId) {
-      delete lastImageByGroup[groupId];
-    }
-
-    io.to(groupId).emit("delete-image", imageId);
+    default:
+      return res.status(400).json({ error: "Unknown type" });
   }
 
   res.json({ success: true });
@@ -82,5 +76,5 @@ app.post("/emit", (req, res) => {
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log("Socket Server running on port", PORT);
+  console.log("🚀 Socket Server running on port", PORT);
 });
