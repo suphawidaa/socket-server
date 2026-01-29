@@ -58,6 +58,14 @@ app.post("/emit", (req, res) => {
       break;
     }
 
+    case "update-image": {
+      if (!image || !image._id) {
+        return res.status(400).json({ error: "Invalid image data" });
+      }
+      io.to(groupId).emit("update-image", image);
+      break;
+    }
+
     case "update-duration": {
       if (typeof duration !== "number") {
         return res.status(400).json({ error: "Invalid duration" });
