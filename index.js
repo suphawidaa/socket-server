@@ -49,6 +49,18 @@ app.post("/emit", (req, res) => {
       break;
     }
 
+    case "media-added": {
+      if (!Array.isArray(req.body.images)) {
+        return res.status(400).json({ error: "Invalid images array" });
+      }
+
+      io.to(groupId).emit("media-added", {
+        images: req.body.images,
+      });
+
+      break;
+    }
+
     case "delete-image": {
       if (!imageId) {
         return res.status(400).json({ error: "Missing imageId" });
